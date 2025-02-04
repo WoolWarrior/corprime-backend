@@ -1,6 +1,10 @@
 export interface MessagePayload {
-  priority: Priority;
+  public: boolean;
   content: string;
 }
 
-export type Priority = 'high' | 'medium' | 'low';
+export interface MessageResponse extends MessagePayload {
+  id: string;
+  timestamp: string;
+  client: string;
+}

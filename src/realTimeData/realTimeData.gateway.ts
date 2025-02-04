@@ -8,7 +8,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { MessagePayload } from '../types';
-import { shouldBroadcastMessage } from '../utils'; // Import the utility function
 
 @WebSocketGateway({
   cors: {
@@ -31,15 +30,22 @@ export class RealTimeDataGateway
 
   @SubscribeMessage('message')
   handleMessage(client: Socket, payload: MessagePayload): void {
-    this.logger.log(`Received message from ${client.id}: Priority ${payload.priority}, Content: ${payload.content}`);
+    this.logger.log(
+      `Received ${payload.public ? 'public' : 'private'} message from ${client.id}: Content: ${payload.content}`,
+    );
     const timestamp = new Date().toISOString();
-    let broadcastMsg = `${client.id} says: Priority ${payload.priority}, Content: ${payload.content} at ${timestamp}`;
+    let messageResponse = {
+      ...payload,
+      timestamp,
+      id: crypto.randomUUID(),
+      client: client.id,
+    };
 
     // Apply the filtering function
-    if (shouldBroadcastMessage(payload)) {
-      this.server.emit('message', broadcastMsg);
+    if (messageResponse.public) {
+      this.server.emit('message', messageResponse);
     } else {
-      this.logger.log(`Message with priority ${payload.priority} is not broadcasted.`);
+      this.logger.log(`Non-public message is not broadcasted.`);
     }
   }
 }
